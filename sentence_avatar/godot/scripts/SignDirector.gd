@@ -64,8 +64,17 @@ func _frame_camera() -> void:
 	var head_pos: Vector3 = _skeleton.global_transform * _skeleton.get_bone_global_pose(head_idx).origin
 	var chest_pos: Vector3 = _skeleton.global_transform * _skeleton.get_bone_global_pose(chest_idx).origin
 	var cam: Camera3D = $Camera3D
-	var focus := head_pos.lerp(chest_pos, 0.55)
-	cam.global_position = focus + Vector3(0, 0.02, 1.35)
+	# Signing-space framing. Rather than move the lens in close (which shrinks
+	# nothing but badly foreshortens signs that reach *toward* the viewer --
+	# you/drink/tomorrow -- and risks clipping the forward hand), we keep a
+	# normal working distance and narrow the FOV (telephoto): that enlarges
+	# the upper body to fill the frame AND flattens perspective so a forward
+	# point reads as a point instead of collapsing into the hand. A small
+	# sideways offset gives a gentle near-frontal 3/4 so forward reach still
+	# shows some depth, while staying frontal enough to read as signing.
+	cam.fov = 41.0
+	var focus := head_pos.lerp(chest_pos, 0.4)
+	cam.global_position = focus + Vector3(0.55, 0.08, 1.4)
 	cam.look_at(focus, Vector3.UP)
 
 
@@ -130,6 +139,10 @@ func _sample_word(keyframes: Array, frac: float) -> Dictionary:
 		var basis_a := _bone_delta_basis(a, bone_name)
 		var basis_b := _bone_delta_basis(b, bone_name)
 		sample[bone_name] = basis_a.slerp(basis_b, local_t)
+	for wrist_bone in ["LeftWrist", "RightWrist"]:
+		var basis_a := _bone_delta_basis(a, wrist_bone)
+		var basis_b := _bone_delta_basis(b, wrist_bone)
+		sample[wrist_bone] = basis_a.slerp(basis_b, local_t)
 	sample["curl_left"] = _lerp_finger_curls(_finger_curls(a, "Left"), _finger_curls(b, "Left"), local_t)
 	sample["curl_right"] = _lerp_finger_curls(_finger_curls(a, "Right"), _finger_curls(b, "Right"), local_t)
 	return sample
@@ -138,7 +151,8 @@ func _sample_word(keyframes: Array, frac: float) -> Dictionary:
 func _apply_sample(sample: Dictionary) -> void:
 	var bob := sin(_idle_t * 1.6) * 0.01
 	_arm_rig.apply(sample, bob)
-	_hand_rig.apply_fingers({"Left": sample["curl_left"], "Right": sample["curl_right"]}, 0.0)
+	var wrist_deltas := {"Left": sample["LeftWrist"], "Right": sample["RightWrist"]}
+	_hand_rig.apply_fingers({"Left": sample["curl_left"], "Right": sample["curl_right"]}, 0.0, wrist_deltas)
 
 
 func _read_config() -> Dictionary:

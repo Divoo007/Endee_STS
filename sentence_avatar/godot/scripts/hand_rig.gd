@@ -75,8 +75,18 @@ func apply(curl_left: float, curl_right: float, wiggle_deg: float = 0.0) -> void
 ## 1.0 (that finger fully curled). Lets a handshape differ per finger, e.g.
 ## "Index": 0.0 with the rest at 1.0 for a pointing hand. A finger/side
 ## missing from the dict defaults to 0.0 (open). wiggle_deg: small
-## continuous wrist rotation layered on top so hands aren't perfectly frozen.
-func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0) -> void:
+## continuous wrist rotation layered on top so hands aren't perfectly frozen
+## -- used only when wrist_deltas has no entry for that side. wrist_deltas:
+## optional {"Left": Basis, "Right": Basis}, a GLOBAL-space rotation (same
+## convention as ArmRig.apply()'s bone_deltas) that REPLACES the wiggle for
+## that side. This is a deliberately separate knob from finger curl: curling
+## fingers can only close them toward the palm, it can never change which
+## way the hand/palm itself is aimed. Aiming the hand (e.g. so a pointing
+## gesture's extended finger reaches toward the camera instead of wherever
+## the forearm happens to leave it) needs an actual wrist rotation, which is
+## what this does -- without touching the elbow/shoulder pose that puts the
+## hand where it is.
+func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0, wrist_deltas: Dictionary = {}) -> void:
 	for bone_name in _relative_order:
 		var idx := _skeleton.find_bone(bone_name)
 		if idx == -1:
@@ -86,9 +96,15 @@ func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0) -> void:
 		if parent_idx != -1:
 			parent_global = _skeleton.get_bone_global_pose(parent_idx)
 		var local_rest := _skeleton.get_bone_rest(idx)
-		var delta_local: Basis
+		var final_global_basis: Basis
 		if bone_name.ends_with("Hand"):
-			delta_local = Basis(HAND_WIGGLE_AXIS, deg_to_rad(wiggle_deg))
+			var side: String = "Left" if bone_name.begins_with("Left") else "Right"
+			if wrist_deltas.has(side):
+				var actual_rest_basis: Basis = parent_global.basis * local_rest.basis
+				final_global_basis = (wrist_deltas[side] as Basis) * actual_rest_basis
+			else:
+				var delta_local := Basis(HAND_WIGGLE_AXIS, deg_to_rad(wiggle_deg))
+				final_global_basis = parent_global.basis * (local_rest.basis * delta_local)
 		else:
 			var role: String = _finger_bone_role.get(bone_name, "Proximal")
 			var side: String = _finger_side.get(bone_name, "Left")
@@ -96,9 +112,8 @@ func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0) -> void:
 			var side_curls: Dictionary = finger_curls.get(side, {})
 			var curl: float = side_curls.get(finger, 0.0)
 			var angle_deg: float = curl * FINGER_CURL_MAX_DEG.get(role, 60.0)
-			delta_local = Basis(FINGER_CURL_AXIS, deg_to_rad(angle_deg))
-		var final_local_basis := local_rest.basis * delta_local
-		var final_global_basis: Basis = parent_global.basis * final_local_basis
+			var delta_local := Basis(FINGER_CURL_AXIS, deg_to_rad(angle_deg))
+			final_global_basis = parent_global.basis * (local_rest.basis * delta_local)
 		var final_global_origin: Vector3 = parent_global * local_rest.origin
 		_skeleton.set_bone_global_pose_override(idx, Transform3D(final_global_basis, final_global_origin), 1.0, true)
 		_skeleton.force_update_all_bone_transforms()

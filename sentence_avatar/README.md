@@ -124,26 +124,50 @@ captioned with the current word.
 
 - `sign_words.py` is where the sign data actually lives — `SENTENCE`, and
   `WORD_SIGNS`, a dict of word -> list of keyframes (`{"t": 0-1, <bone
-  name>: {"axis", "angle"}, "curl_left"/"curl_right": <handshape>}`), in the
-  same spirit (and with the same "placeholder, not verified" caveat) as the
-  old `isl_avatar/signs.py`. Unknown words raise an error before anything
-  renders. To add a new sentence: add its words' keyframes to `WORD_SIGNS`
-  and point `SENTENCE` at it (or, once this expands past one sentence,
-  pass sentences in directly).
+  name>: {"axis", "angle"}, "curl_left"/"curl_right": <handshape>}`).
+  Unknown words raise an error before anything renders. To add a new
+  sentence: add its words' keyframes to `WORD_SIGNS` and point `SENTENCE`
+  at it (or, once this expands past one sentence, pass sentences in
+  directly).
+- **The content-word signs are modelled on documented Indian Sign Language
+  (ISL) forms**, not generic motions (see the module docstring for the
+  per-word intent): `you` points at the addressee with the arm carried out
+  in front; `drink` raises a cupped "C" hand to the mouth and tilts;
+  `tea` is two-handed (non-dominant hand cups a glass at chest height, the
+  dominant index stirs above it); `tomorrow` extends the index and rolls
+  the forearm forward (the "future/day-ahead" gesture); `going` pushes a
+  flat hand forward. They were reconstructed from *textual* ISL references
+  (the authoritative video portal is bot-walled and video can't be watched
+  in this environment), so they're a faithful approximation, not a
+  teaching-grade reference — refining any of them is a data edit to the
+  keyframes. `are`/`to` are deliberately light non-lexical lifts (ISL drops
+  the copula and infinitive marker).
 - `<handshape>` is either a single 0.0-1.0 number (every finger curls the
   same amount) or a per-finger dict `{"Thumb": 0-1, "Index": 0-1, "Middle":
   0-1, "Ring": 0-1, "Little": 0-1}` so a word's handshape can actually look
-  like the thing it's signing instead of just a generic open-hand-to-fist
-  slider -- e.g. "you" points (`"Index": 0.0` straight, everything else
-  curled), "drink" grips a cup (thumb held apart from four curled fingers),
-  "tea" pinches (thumb + index together, the rest tucked away), "tomorrow"
-  is a thumbs-up-shaped fist (`"Thumb": 0.0`, everything else curled). Arm
-  position (which bone rotates how far) and handshape (which fingers curl
-  how far) are independent knobs — editing one never touches the other.
+  like the thing it's signing. A few reusable shapes are defined at the top
+  of `WORD_SIGNS` (`POINT`, `FLAT`, `CUP_C`, `OPEN`). On this avatar's
+  low-poly hand mesh a subtle curl reads as an ambiguous half-curled blob,
+  so handshape contrast is deliberately exaggerated past what looks
+  "correct" in isolation. Arm position (which bone rotates how far),
+  handshape (which fingers curl), and wrist aim (below) are independent
+  knobs — editing one never touches the others.
+- Arm placements (hand to the mouth, both hands centred at the chest for
+  "tea", the forward point for "you", etc.) were dialled in against a
+  reach probe — a throwaway Godot script that, for a candidate
+  (UpperArm, LowerArm, wrist) set, prints the resulting world hand position
+  and finger direction — rather than guessed. That's why e.g. `drink`
+  lands at mouth height (~1.34) and `tea`'s two hands meet near centre
+  instead of floating apart.
 - `scripts/hand_rig.gd`'s `apply_fingers()` is what makes per-finger
   handshapes possible: `apply()` (what the emotion demo uses, unchanged)
   is now a thin wrapper that just builds a uniform-curl dict and calls
   `apply_fingers()`.
+- A keyframe can also set `"RightWrist"`/`"LeftWrist"`: `{"axis", "angle"}`
+  in the same global-space convention as the arm bones, to rotate just the
+  wrist independent of the elbow/shoulder angles that position the hand —
+  see "Aiming a hand at the camera" below for why this exists and why it's
+  a separate knob from both arm position and finger curl.
 - `scripts/SignDirector.gd` reads the resolved per-word keyframes from the
   config, samples each word's keyframe list every frame (linear walk +
   slerp between the two surrounding keyframes, same interpolation shape as
@@ -154,6 +178,52 @@ captioned with the current word.
   passes `res://scenes/Main.tscn` on the `godot` CLI invocation so it isn't
   affected by that default. Writes to `output_signs.mp4` by default
   (separate from the emotion demo's `output.mp4`).
+
+### Framing: telephoto 3/4 (`SignDirector._frame_camera`)
+
+Signs are only useful if you can see them, so the camera is framed for the
+**signing space** (upper chest up to the mouth, plus the space the hands
+reach into), not the whole body. Two deliberate choices:
+
+- **Narrow FOV (~41°, telephoto) at a normal working distance**, rather
+  than moving the lens in close. Moving close would enlarge the subject but
+  badly foreshorten any sign that reaches *toward* the viewer
+  (you/drink/tomorrow) and risk clipping the forward hand. A long lens
+  enlarges the upper body to fill the frame *and* flattens perspective, so
+  a forward point reads as a point instead of collapsing into the hand.
+- **A gentle ~20° sideways (3/4) offset.** A dead-on lens shows only the
+  arm's X/Y silhouette, so "forward" (depth) barely registers — a forward
+  reach looks like the arm swung to a different side. From a slight angle
+  the right arm's forward reach is seen closer to broadside, so its depth
+  actually shows, while the face stays frontal enough to read as signing.
+
+### Aiming a hand at the viewer ("you", and the `RightWrist`/`LeftWrist` keys)
+
+"you" points at the addressee — here, the viewer — which means aiming the
+hand at the camera, the single hardest thing to show on a fixed shot: a
+finger pointed straight down the lens foreshortens to a stub (reads as a
+closed hand, not a point), yet a finger turned far enough to be crisply
+visible is by definition no longer pointing at the viewer. There is no
+angle that fully satisfies both; it's a geometric ceiling of a one-camera
+setup, not a bug.
+
+What ships is the honest compromise: the arm is genuinely thrust **out in
+front** of the body toward the viewer (`RightUpperArm` swung forward about
+the vertical axis, elbow fairly extended), and the wrist is turned so the
+index points about three-quarters of the way toward the camera — verified
+with the finger-direction probe to sit at the sweet spot where it still
+aims at the viewer but keeps enough off-axis component (a slight upward
+tilt) to read as an extended finger rather than a stub. The `RightWrist`/
+`LeftWrist` keyframe keys are what make that wrist aim possible independent
+of the arm: `hand_rig.gd`'s `apply_fingers()` takes an optional
+`wrist_deltas` dict that, when present for a side, replaces that hand's
+usual idle wiggle with a real global-space rotation (same composition
+convention as `arm_rig.gd`). Words that don't set it are mathematically
+identical to the old wiggle-only behaviour (identity delta → rest
+orientation), so it changes nothing elsewhere, and the emotion demo
+(`Director.gd`, which never passes `wrist_deltas`) is untouched. The wrist
+knob also does real work in `drink`/`tea`/`tomorrow` — tilting the "glass",
+turning the stir, and rolling the "tomorrow" finger forward.
 
 ## Web app (live, in the browser)
 
@@ -255,7 +325,17 @@ instructions, and for this avatar's required attribution text.
 - Poses are a fixed held stance per segment (arms/torso/head), with a
   continuous idle wiggle layered on the hands/fingers — not a full
   hand-authored animation curve for the whole body.
-- The sign-language prototype's gestures are placeholders, not verified
-  against any real sign language (same caveat the old `isl_avatar`
-  prototype carried) — they exist to prove out the per-word keyframe
-  pipeline, not to teach anyone an actual sign.
+- The sign-language gestures are modelled on documented ISL forms but were
+  reconstructed from *textual* references only — the authoritative video
+  portal (indiansignlanguage.org) is behind a bot wall and video can't be
+  watched in this environment. Treat them as a faithful approximation, not
+  a teaching-grade reference; each is a data edit away from correction if
+  checked against video.
+- The fixed camera can't fully sell a hand pointed straight at the viewer
+  ("you") — a finger down the lens foreshortens to a stub, so the shipped
+  pose is a compromise (arm out front + finger ~3/4 toward the viewer). See
+  "Aiming a hand at the viewer" above.
+- Signs still share one avatar, one camera, and a low-poly hand mesh, so
+  fine handshape detail is limited; contrast is exaggerated to compensate.
+  "tea" (two hands at the chest) and "drink" (one hand to the mouth) are
+  now clearly distinct; "tomorrow" reads by its rolling extended index.

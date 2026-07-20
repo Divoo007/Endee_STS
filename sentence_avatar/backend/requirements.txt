@@ -1,0 +1,28 @@
+# Backend dependencies for the speech -> ISL avatar pipeline.
+# Pinned for reproducible installs. Python 3.10+ recommended.
+#
+# NOTE: several of these pull in large native wheels (CTranslate2 for
+# faster-whisper, PyAV for audio decode). Audio decoding of .webm/.mp3 also
+# needs the system `ffmpeg` binary on PATH (see README.md).
+
+# --- Web framework ---
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12          # multipart/form-data (file uploads)
+python-dotenv==1.0.1              # load .env into the environment
+
+# --- Transcription (local default) ---
+faster-whisper==1.0.3             # CTranslate2 Whisper; pulls in av, ctranslate2
+
+# --- Prosody ---
+opensmile==2.5.0                  # eGeMAPSv02 acoustic features
+soundfile==0.12.1                 # fast audio duration probe (wav/flac/ogg)
+
+# --- LLM + numerics ---
+openai==1.54.4                    # gloss LLM and (optional) hosted Whisper
+httpx<0.28                        # openai 1.54.x calls httpx.Client(proxies=...),
+                                  # which httpx>=0.28 removed -> "unexpected keyword
+                                  # argument 'proxies'". Pin below 0.28 so the client
+                                  # constructs (else glossing silently falls to rules).
+numpy==1.26.4                     # pinned <2 for faster-whisper/opensmile compat
+requests==2.32.3

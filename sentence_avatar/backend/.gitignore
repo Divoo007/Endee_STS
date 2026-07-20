@@ -1,0 +1,8 @@
+# Secrets — never commit the real .env (the API key lives here).
+.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc

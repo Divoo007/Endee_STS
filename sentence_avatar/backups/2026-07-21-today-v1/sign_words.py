@@ -113,36 +113,6 @@ ONE = {"Thumb": 1.1, "_thumb_axis": "BACK", "Index": 0.0, "Middle": 1.0, "Ring":
 # -visible -- a sliver of thumb reads on the side exactly like a real fist. Verified
 # ship + front in PoseLab.
 FIST_A = {"Thumb": 0.7, "_thumb_axis": "BACK", "Index": 1.0, "Middle": 1.0, "Ring": 1.0, "Little": 1.0}
-# Open spread "5" hand (WHY): all five fingers extended and clearly SPLAYED apart,
-# palm open -- the loose questioning/upturned open hand. None of the other shapes
-# spread the fingers: FLAT holds them TOGETHER (a B-hand). The spread is produced by
-# driving the SAME convergence machinery CONE uses (hand_rig.gd), but NEGATIVE: a
-# negative "_converge" REVERSES the base-joint adduction so the four fingers fan
-# OUTWARD instead of toward a point, and reverses the thumb opposition so the thumb
-# abducts away to the side (an open palm, not a tucked one). Curl is kept very light
-# (~0.1, nearly straight) so it reads as an open hand, not a claw. Thumb about BACK
-# (like the fists) so at this light curl it lies naturally along the radial side.
-FIVE = {"Thumb": 0.0, "Index": 0.1, "Middle": 0.1, "Ring": 0.1, "Little": 0.1,
-        "_thumb_axis": "BACK", "_converge": -0.7}
-# NAME_HAND: palm held FLAT-FORWARD (its area vector points at the viewer -- see NAME's
-# per-key wrist solve), with the INDEX folded to point FORWARD out of the palm (toward the
-# viewer) + the THUMB curved forward, and middle/ring/pinky closed into a fist.
-#  * INDEX 0.8 -- a PIP-bend ("_pip_bend":["Index"]): folds ~76deg at the PIP (the
-#    Intermediate joint) ONLY, keeping the proximal segment STRAIGHT and in line with the
-#    hand (upright) while just the top of the finger hooks forward. This is the same
-#    single-joint fold the rig's base-bend does, but at the PIP instead of the base knuckle
-#    (MCP) -- the earlier version base-bent at the MCP so the WHOLE finger tipped forward;
-#    snapshot of that in backups/2026-07-22-name-index-knuckle-bend/. Per-finger PIP-bend
-#    was added to the rig alongside base-bend (hand_rig, "_pip_bend"). Bends about the
-#    FINGER curl axis; the other three curl NORMALLY into the fist.
-#  * THUMB 0.5 -- a NORMAL (distributed) curl about the raw axis [0.61,-0.42,0.14], NOT a
-#    base-bend. It points forward/down at the viewer (roughly parallel to the index), but
-#    because all three thumb joints share the bend it CURVES like a real thumb instead of
-#    hinging rigidly at one joint (the base-bent version read as a stiff stick). The axis
-#    was tuned from the forward-aim [0.7,-0.15,0.7] (twisted ~53deg toward the camera, then
-#    ~20deg toward the avatar's RIGHT). Raw axis, tuned empirically (PoseLab).
-NAME_HAND = {"Thumb": 0.5, "Index": 0.8, "Middle": 1.0, "Ring": 1.0, "Little": 1.0,
-             "_pip_bend": ["Index"], "_thumb_axis": [0.61, -0.42, 0.14]}
 
 SENTENCE = "Hello teacher, you drink."
 
@@ -285,81 +255,40 @@ def _build_sorry():
 SORRY_SIGN = _build_sorry()
 
 # HELP: a "thumbs-up served on a plate", decoded from the ISLRTC reference
-# (ISL_dictionary/Help.mp4).
-# The RIGHT hand makes a thumbs-up (GOOD's handshape) FLOATING just above and in
-# front of the upturned LEFT palm (a flat, level plate) -- not resting on it (see
-# the float-offset note below); the joined two-hand set traces a SEMICIRCULAR ARC
-# that moves AWAY from the body -- from close in at the lower chest, UP-and-FORWARD
-# to an apex, then DOWN-and-FORWARD, ending low and FARTHEST OUT (presented away)
-# -- then returns to rest. Both hands move TOGETHER, keeping the stack. The path
-# never comes back toward the body: forward reach (z) increases MONOTONICALLY at
-# every key, while height rises to the apex then falls. On this rig the elbow is
-# pinned back, so reaching FAR forward forces the hand LOW -- hence the apex is
-# up-but-near and the end is low-but-far, which is exactly "up+forward then
-# down+forward". (On the shipped near-frontal camera the vertical rise/fall reads
-# most; the forward travel reads as the arms visibly extending away.)
+# (ISL_dictionary/Help.mp4). The RIGHT hand makes a thumbs-up (GOOD's handshape)
+# resting on the upturned LEFT palm (a flat, level plate); the joined two-hand
+# set scoops UP-and-FORWARD in a shallow semicircle -- from close to the body at
+# the upper abdomen, up over a peak, then presented forward at the lower chest --
+# held, then returns to rest. Both hands move TOGETHER, keeping the stack.
 #
-# Two-handed stacking (Probe/PoseLab-solved, verified by RENDER -- front, top-down,
-# and true side profile, since a bone-distance gap alone doesn't prove the meshes
-# don't clip and the near-frontal camera alone can hide a depth collision):
-#  * LEFT flat plate: palm UP, fingers pointing FORWARD and LEVEL. Like NONE's
-#    plate, a plain FORWARD-90 palm-up roll leaves the fingers pointing UP; a
-#    RIGHT 95 pitch levels the palm across ALL the arm poses, so ONE constant
-#    LeftWrist works for the whole arc.
+# Two-handed stacking (Probe/PoseLab-solved, verified on the shipped ~19deg-off
+# camera):
+#  * LEFT flat plate: palm UP, fingers pointing FORWARD and LEVEL so the fist
+#    sits ON it. Like NONE's plate, a plain FORWARD-90 palm-up roll leaves the
+#    fingers pointing UP (into the fist); a RIGHT 95 pitch levels the palm, and
+#    it levels it at ALL three arm poses (index tip within ~2cm of the wrist
+#    height each), so ONE constant LeftWrist works for the whole scoop.
 #  * RIGHT thumbs-up, thumb held WORLD-UP at every key. GOOD's fixed wrist points
 #    the thumb up only when the forearm is folded upright as in GOOD; across this
-#    arc the forearm angle changes, so that same wrist would swing the thumb
-#    forward/sideways. Instead each key's RightWrist is SOLVED: a raw axis-angle
-#    PREFIX (from Probe, with GOOD's canonical thumbs-up marked as the orientation
-#    TARGET -- full_rel = good_natural * key_natural^-1) makes the hand's world
-#    orientation MATCH GOOD's at that key, then GOOD's own [UP -90, RIGHT 40] suffix
-#    builds the thumbs-up on top. The thumb points up the whole way through.
-#  * FLOATS just above the palm, no clip: the LEFT wrist sits at a CONSTANT world
-#    offset from the RIGHT fist bottom (RightLittleDistal) at EVERY key --
-#    left_wrist = fist + (-0.0165, -0.025, -0.048) BEFORE the shoulder-roll lift
-#    below. That offset was originally solved SURFACE-first, not bone-first (an
-#    earlier version placed the left wrist a fixed drop UNDER the fist BONE, which
-#    parked the fist over the palm HEEL and actually intersecting at the low keys
-#    -- and it only LOOKED fine because it was checked on the near-frontal shipped
-#    camera, which compresses depth and hides that). That got the fist landing on
-#    the palm CENTRE with no sink -- but "on the palm centre" still meant resting
-#    (mesh contact), and a render zoom showed the two meshes actually clipping.
-#    _help_key's RightShoulder FORWARD 5 (below) now lifts the fist ~3cm off that
-#    contact point and ~3.7cm forward at every key, so the offset above describes
-#    where the fist WOULD rest without the roll; the roll is what turns that into a
-#    small, clean, non-intersecting floating gap, verified from all three angles.
-#    Because both hands hold a constant world orientation across the arc (right
-#    thumb-up matched to GOOD per key, left plate a constant LeftWrist), the fist
-#    keeps the same floating spot over the palm the whole way. Left arm angles per
-#    key were Newton-solved (K4 Jacobian) to hold the pre-roll offset to +-1mm
-#    across all 9 keys; verify any change from SIDE/BELOW, never the shipped cam.
-# RANGE: this is the "prominent" arc -- height sweeps ~1.14 -> ~1.43 (apex, upper
-# chest) -> ~1.10, and forward reach ~0.14 -> ~0.29 (the rig's centred max; the
-# elbow is pinned back so it can't reach further while staying centred). NOTE ON
-# CAMERA: on the near-frontal telephoto shipped camera the big up/down reads
-# strongly, but "forward" is the camera's depth axis and shows mostly as the ARM
-# EXTENDING toward the viewer (forearm foreshortening, fold->straight from START to
-# END) + the hand growing ~10%; a literal on-screen forward TRANSLATION is not
-# possible from a frontal camera (see the projection analysis in the chat log).
+#    scoop the forearm angle changes, so that same wrist would swing the thumb
+#    forward/sideways (verified -- the thumb went level at the low/forward keys).
+#    Instead each key's RightWrist is SOLVED: a raw axis-angle PREFIX (from Probe,
+#    with GOOD's canonical thumbs-up marked as the orientation TARGET -- full_rel
+#    = good_natural * key_natural^-1) makes the hand's world orientation MATCH
+#    GOOD's at that key, then GOOD's own [UP -90, RIGHT 40] suffix builds the
+#    thumbs-up on top. Result: the thumb points up (~8cm above the wrist) all the
+#    way through, independent of where the arm is in the arc.
+#  * The fist rides ~5-7cm above the plate (right wrist above left wrist, fist
+#    bottom at the palm surface), centred at x~0 -- verified stacked, no clipping.
 # HELP carries NO default emotion (informational, like most words); the caller/LLM
 # can still tag it per utterance.
 _HELP_THUMB = {"Thumb": -0.5, "_thumb_axis": "BACK",  # GOOD's extra-straight thumbs-up
                "Index": 1.0, "Middle": 1.0, "Ring": 1.0, "Little": 1.0}
 _HELP_LWRIST = [{"axis": "FORWARD", "angle": 90}, {"axis": "RIGHT", "angle": 95}]  # flat palm-up plate
 def _help_key(r_up, r_lo, wrist_axis, wrist_ang, l_up, l_lo):
-    # r_up/l_up = (RIGHT elevation, UP yaw-to-centre) of the upper arm; r_lo/l_lo =
-    # (RIGHT fold, UP steer) of the forearm. wrist_axis/wrist_ang = the Probe-solved
-    # per-key orientation prefix; the [UP -90, RIGHT 40] suffix is GOOD's own wrist.
-    # RightShoulder FORWARD 5: a uniform per-key depth-roll that lifts the fist ~3cm
-    # OFF the left palm (clearing the mesh intersection the resting-on-palm version
-    # had) and pushes it ~3.7cm FORWARD -- the "up slightly so it doesn't intersect,
-    # then forward slightly" tweak. It shifts the fist up+forward uniformly across
-    # all 9 keys, so the arc shape is unchanged; the LEFT palm is untouched (so the
-    # fist now floats just above and in front of it, not on it). Each key's wrist
-    # prefix was RE-SOLVED with this shoulder roll included (Probe, GOOD as the
-    # orientation target) so the thumb still points straight up throughout.
+    # wrist_axis/wrist_ang = the Probe-solved per-key orientation prefix; the
+    # [UP -90, RIGHT 40] suffix is GOOD's own thumbs-up wrist.
     return {
-        "RightShoulder": [{"axis": "FORWARD", "angle": 5}],
         "RightUpperArm": [{"axis": "RIGHT", "angle": r_up[0]}, {"axis": "UP", "angle": r_up[1]}],
         "RightLowerArm": [{"axis": "RIGHT", "angle": r_lo[0]}, {"axis": "UP", "angle": r_lo[1]}],
         "RightWrist": [{"axis": wrist_axis, "angle": wrist_ang},
@@ -370,48 +299,17 @@ def _help_key(r_up, r_lo, wrist_axis, wrist_ang, l_up, l_lo):
         "LeftWrist": _HELP_LWRIST,
         "curl_left": FLAT,
     }
-# NINE keys along the away-arc. Two things make the two-hand group hold together:
-#  (1) RIGID RELATIVE POSE. The left wrist sits at a CONSTANT offset from the RIGHT
-#      FIST BOTTOM at EVERY key -- left_wrist = fist(RightLittleDistal) +
-#      (-0.0165, -0.025, -0.048) -- Newton-solved (K4 Jacobian) so the measured
-#      offset holds to +-1mm across all 9 keys, instead of a per-key target that
-#      drifted ~3cm (the left visibly slid vs the right = "left moving faster").
-#      With a fixed offset (and both hands' world orientation held constant -- the
-#      right thumb-up matched to GOOD per key, the left plate a constant LeftWrist),
-#      the fist keeps the same spot over the palm centre the whole way.
-#  (2) DENSITY. Interpolation is LINEAR-per-segment (SignDirector._sample_word), so
-#      even with a fixed offset AT the keys the two hands trace slightly different
-#      curves BETWEEN them and can separate mid-segment. Nine closely-spaced keys
-#      (~0.09 apart) keep that between-key drift tiny -- verified on between-key
-#      frames, the gap stays small and constant throughout (not just at the keys).
-#      This also gives the fluid, corner-free curve.
-# Right-fist world pos noted per key (POST-shoulder-roll -- see _help_key -- so each
-# is ~3cm higher and ~3.7cm further forward than the pre-roll offset above). z
-# (forward) rises toward K8 (farthest, presented away); y rises to the apex (K4,
-# upper chest) then falls to a raised low end (not the waist).
-_HELP_K0 = _help_key((10, 80), (-70, 55), [0.0992, -0.2737, 0.9567], 63.92, (5.9, -82.4), (-54, -48.2))    # (-0.005,1.252,0.185) near+low
-_HELP_K1 = _help_key((6, 80), (-86, 55), [-0.0353, -0.4101, 0.9113], 48.62, (9.0, -81.8), (-78, -46.3))    # (0.000,1.322,0.201) rising
-_HELP_K2 = _help_key((-2, 80), (-102, 55), [-0.2289, -0.6790, 0.6975], 33.74, (2.3, -83.4), (-94, -43.2))  # (-0.010,1.402,0.225)
-_HELP_K3 = _help_key((-10, 80), (-102, 55), [-0.1675, -0.8087, 0.5639], 28.44, (-0.1, -84.5), (-102, -44.7))  # (-0.007,1.436,0.226)
-_HELP_K4 = _help_key((-18, 80), (-94, 45), [-0.1078, -0.6263, 0.7721], 18.24, (-4.0, -80.9), (-102, -40.2))  # (0.003,1.454,0.257) apex (upper chest)
-_HELP_K5 = _help_key((-2, 80), (-102, 45), [-0.3585, -0.4703, 0.8064], 27.95, (-3.4, -81.6), (-86, -34.1))  # (-0.018,1.402,0.265)
-_HELP_K6 = _help_key((2, 80), (-87, 40), [-0.1403, -0.1320, 0.9813], 39.98, (11.2, -87.0), (-86, -27.6))  # (-0.004,1.343,0.269) descending
-_HELP_K7 = _help_key((6, 80), (-78, 35), [-0.0802, 0.0206, 0.9966], 51.22, (9.4, -87.7), (-70, -22.1))  # (-0.011,1.296,0.283)
-_HELP_K8 = _help_key((6, 80), (-60, 35), [0.0545, 0.0604, 0.9967], 67.39, (-7.3, -74.2), (-30, -40.7))  # (-0.008,1.235,0.278) raised-low + farthest out
-# Even ~0.09 spacing -> steady speed; the single global ease (SignDirector
-# ._ease_progress) accelerates from and decelerates to rest, so no per-key stops.
+# The three scoop keys (right fist world pos noted): START close+low (0,1.18,0.17)
+# -> TOP up over the peak (0,1.29,0.23) -> END presented forward (0,1.24,0.22).
+_HELP_START = _help_key((6, 80), (-55, 50), [0.1873, -0.1914, 0.9635], 73.80, (8, -80), (-45, -50))
+_HELP_TOP   = _help_key((6, 80), (-87, 40), [-0.1184, -0.2296, 0.9661], 44.96, (8, -80), (-77, -40))
+_HELP_END   = _help_key((6, 80), (-71, 40), [0.0244, -0.1324, 0.9909], 58.42, (0, -80), (-45, -40))
 HELP_SIGN = [
     {"t": 0.0, **NEUTRAL_POSE},
-    {"t": 0.09, **NEUTRAL_POSE, **_HELP_K0},   # hands meet, near the body + low
-    {"t": 0.18, **NEUTRAL_POSE, **_HELP_K1},   # rising, forward
-    {"t": 0.27, **NEUTRAL_POSE, **_HELP_K2},
-    {"t": 0.36, **NEUTRAL_POSE, **_HELP_K3},
-    {"t": 0.45, **NEUTRAL_POSE, **_HELP_K4},   # apex: up and forward
-    {"t": 0.54, **NEUTRAL_POSE, **_HELP_K5},
-    {"t": 0.63, **NEUTRAL_POSE, **_HELP_K6},   # descending, still forward
-    {"t": 0.72, **NEUTRAL_POSE, **_HELP_K7},
-    {"t": 0.80, **NEUTRAL_POSE, **_HELP_K8},   # end: raised-low + farthest out (presented away)
-    {"t": 0.88, **NEUTRAL_POSE, **_HELP_K8},   # brief hold on the offer
+    {"t": 0.18, **NEUTRAL_POSE, **_HELP_START},   # hands come together, low at the abdomen
+    {"t": 0.40, **NEUTRAL_POSE, **_HELP_TOP},     # scoop up over the peak
+    {"t": 0.58, **NEUTRAL_POSE, **_HELP_END},     # present forward at the lower chest
+    {"t": 0.80, **NEUTRAL_POSE, **_HELP_END},     # hold the presented offer
     {"t": 1.0, **NEUTRAL_POSE},
 ]
 
@@ -514,35 +412,32 @@ ME_SIGN = [
 # a couple of times ("this day / right now, here"), per the ISLRTC reference
 # (ISL_dictionary/Today.mp4, decoded frame-by-frame): the hand rises to mid-chest, the
 # index points down at the torso, and taps down twice.
-# GEOMETRY (PoseLab-solved): the arm reaches OUT slightly DIAGONALLY (per user) -- the
-# upper arm swings out (UP 56, down from 66) and the elbow is opened (LowerArm RIGHT -46,
-# from -58), so the hand sits out to the avatar's right + forward instead of tucked at
-# centre-chest. The index in that pose naturally points ACROSS the body (+x), so the wrist
-# rolls FORWARD 90 to rotate the whole hand DOWN (index at the floor), THEN adds a world
-# UP +30 TWIST -- an anticlockwise turn seen from ABOVE (right-hand rule about +Y) -- to
-# roll the hand as the user asked. (An earlier "solved palmar-flexion" wrist, raw axis
-# ~112 deg, read WORSE and was reverted -- keep the FORWARD-90-plus-UP-twist form. The
-# pre-twist / pre-extend version is snapshotted in backups/2026-07-21-today-v1/.)
+# GEOMETRY (PoseLab-solved): the forearm is held ~horizontal across the chest (hand
+# centred + forward); the index in that pose naturally points ACROSS the body (+x), so a
+# wrist roll of FORWARD 90 rotates the whole hand DOWN so the index points at the floor
+# (verified: IndexDistal ~15cm below the wrist, x/z within ~3cm of it). A later attempt
+# swapped this for a "solved palmar-flexion" wrist (raw axis, ~112 deg) to fix a perceived
+# sideways bend -- it read WORSE and was reverted per user; keep this FORWARD 90 roll.
 # The BOB is driven ENTIRELY by the upper-arm RIGHT angle (more negative = higher on this
-# rig): high -37 (hand y~1.39) <-> low -20 (hand y~1.28), ~10cm, in the mid/upper-chest
-# region (raised ~4.5cm per user "slightly up"). Forearm fold + wrist held CONSTANT across
-# every key, so the index keeps pointing straight down through the whole bob (verified both
-# extremes: IndexDistal ~14cm below the wrist). Handshape = ONE (thumb closed about BACK).
-_TODAY_WRIST = [{"axis": "FORWARD", "angle": 90}, {"axis": "UP", "angle": 30}]
+# rig): high -30 (hand y~1.38) <-> low -13 (hand y~1.28), ~10cm, RAISED into the mid/upper-
+# chest region per user note. Forearm fold + wrist held CONSTANT across every key, so the
+# finger keeps pointing straight down through the whole bob (no re-solve, no visible twist).
+# Handshape = ONE (thumb closed about BACK, index extended).
+_TODAY_WRIST = {"axis": "FORWARD", "angle": 90}
 def _today_key(up_right):
     return {
-        "RightUpperArm": [{"axis": "RIGHT", "angle": up_right}, {"axis": "UP", "angle": 56}],
-        "RightLowerArm": [{"axis": "RIGHT", "angle": -46}, {"axis": "UP", "angle": 44}],
+        "RightUpperArm": [{"axis": "RIGHT", "angle": up_right}, {"axis": "UP", "angle": 66}],
+        "RightLowerArm": [{"axis": "RIGHT", "angle": -58}, {"axis": "UP", "angle": 44}],
         "RightWrist": _TODAY_WRIST,
         "curl_right": ONE,
     }
 TODAY_SIGN = [
     {"t": 0.0, **NEUTRAL_POSE},
-    {"t": 0.26, **NEUTRAL_POSE, **_today_key(-37)},   # rise, form the point: index down at the chest (high)
-    {"t": 0.40, **NEUTRAL_POSE, **_today_key(-20)},   # tap DOWN
-    {"t": 0.54, **NEUTRAL_POSE, **_today_key(-37)},   # back up
-    {"t": 0.68, **NEUTRAL_POSE, **_today_key(-20)},   # tap DOWN again
-    {"t": 0.82, **NEUTRAL_POSE, **_today_key(-37)},   # settle (up)
+    {"t": 0.26, **NEUTRAL_POSE, **_today_key(-30)},   # rise, form the point: index down at the chest (high)
+    {"t": 0.40, **NEUTRAL_POSE, **_today_key(-13)},   # tap DOWN
+    {"t": 0.54, **NEUTRAL_POSE, **_today_key(-30)},   # back up
+    {"t": 0.68, **NEUTRAL_POSE, **_today_key(-13)},   # tap DOWN again
+    {"t": 0.82, **NEUTRAL_POSE, **_today_key(-30)},   # settle (up)
     {"t": 1.0, **NEUTRAL_POSE},
 ]
 
@@ -579,119 +474,7 @@ YESTERDAY_SIGN = [
     {"t": 1.0, **NEUTRAL_POSE},
 ]
 
-# KNOW: a four-finger hand whose fingertips TAP the TEMPLE, twice -- "it's in my head."
-# Matches the ISLRTC reference (ISL_dictionary/Know.mp4): all four fingers extended and
-# together (NOT a fist, NOT a single index), raised to the side of the forehead with a
-# slight knuckle bend angling them toward the temple, tapping in/out twice; the hand
-# withdraws with the fingers still open (never closes into a fist). CONFIRMED 2026-07-22.
-#
-# Rejected predecessors -- do NOT revert to any of these:
-#  * A four-finger "bent-B" edge-on hand (fingers bent ~90 deg at the base) that floated
-#    beside the head and never touched it.
-#  * A single INDEX point (ONE handshape) -- wrong, all four fingers point at the head.
-#  * A tap driven by the UPPER arm -- that flaps the ELBOW sideways instead of moving the
-#    hand toward/away from the head. The tap must be driven by the LOWER arm with the upper
-#    arm fixed (Probe-confirmed: across lower-arm UP the elbow stays put at
-#    (-0.211,1.407,0.260) while only the hand travels in/out).
-#
-# Current geometry (Probe/PoseLab-solved):
-#  * ORIENTATION: a forearm TWIST (RightWrist roll UP -60) turns the palm to face the SIDE
-#    OF THE FACE (palm toward the head), so the hand lies against the temple edge-on.
-#  * HANDSHAPE: four fingers carry a slight base-knuckle bend ("_base_bend": True, curl 0.3
-#    -> ~30 deg at the base only, straight beyond) so they angle gently toward the temple
-#    -- not dead-flat, not a full ~90-deg bent-B. Thumb barely curled (0.15).
-#  * PLACE: RightUpperArm [RIGHT -82, UP 38] (fixed) puts the hand at temple height and
-#    shifted LEFT enough that the fingertips clear the front hairline (lowered from UP 46).
-#    RightLowerArm UP swings between 78 (NEAR -- small gap off the temple, no face/hair
-#    clipping) and 62 (OUT -- pulled well clear for a visible tap).
-#  * MOTION: rise to NEAR, then two full away-and-back cycles (OUT/NEAR/OUT/NEAR) before a
-#    brief hold and withdrawal.
-# Emotion NEUTRAL (informational, like TODAY/YESTERDAY) -- no _WORD_DEFAULT_EMOTION entry.
-_KNOW_HAND = {"Thumb": 0.15, "_base_bend": True,
-              "Index": 0.3, "Middle": 0.3, "Ring": 0.3, "Little": 0.3}
-def _know_key(lo_yaw):
-    # lo_yaw is the LOWER-arm UP yaw: 78 = hand IN near the temple (small gap, no clipping),
-    # 62 = pulled well out for the tap (wide range). The upper arm is FIXED so the elbow
-    # does not move -- only the hand travels in/out.
-    # RightWrist UP -60 twists the forearm so the PALM faces the SIDE OF THE FACE.
-    return {
-        "RightUpperArm": [{"axis": "RIGHT", "angle": -82}, {"axis": "UP", "angle": 38}],
-        "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": lo_yaw}],
-        "RightWrist": [{"axis": "UP", "angle": -60}],
-        "curl_right": _KNOW_HAND,
-    }
-_KNOW_TOUCH = _know_key(78)   # hand IN near the temple (small gap, no face/hair clip)
-_KNOW_LIFT = _know_key(62)    # hand pulled well out for the tap -- wider range (elbow fixed)
-KNOW_SIGN = [
-    {"t": 0.0, **NEUTRAL_POSE},
-    {"t": 0.18, **NEUTRAL_POSE, **_KNOW_TOUCH},   # rise, hand to the temple (near 1)
-    {"t": 0.34, **NEUTRAL_POSE, **_KNOW_LIFT},    # away 1 (hand moves out, elbow still)
-    {"t": 0.48, **NEUTRAL_POSE, **_KNOW_TOUCH},   # back in toward the temple (near 2)
-    {"t": 0.62, **NEUTRAL_POSE, **_KNOW_LIFT},    # away 2
-    {"t": 0.76, **NEUTRAL_POSE, **_KNOW_TOUCH},   # back in toward the temple (near 3)
-    {"t": 0.86, **NEUTRAL_POSE, **_KNOW_TOUCH},   # brief hold
-    {"t": 1.0, **NEUTRAL_POSE},
-]
-
-# NAME: the hand held PALM-FLAT-FORWARD (palm area vector at the viewer) with the INDEX
-# bent forward + the THUMB base-bent forward (NAME_HAND, other three fisted), drawn
-# HORIZONTALLY across the FULL width of the body, from the avatar's LEFT to its RIGHT --
-# like highlighting a line of text / drawing the top edge of a text-box. AUTHORED FROM THE
-# USER'S DESCRIPTION of this ISL variant, NOT decoded from a reference video: the
-# ISL_dictionary clip in hand ("Name (Sign 2)") shows a DIFFERENT form (an index+thumb
-# hook raised to the temple then drawn down), so this is a distinct, reference-text-based
-# sign (like SORRY / I-ME).
-# MOTION (per the user): (1) QUICKLY raise the right hand across to the avatar's LEFT,
-# forming the handshape; (2) SLOWLY drag it LEFT->RIGHT across the whole body; (3) drop
-# back to rest. The slow drag gets the bulk of the time so the "highlight" reads.
-# GEOMETRY (Probe/PoseLab-solved): the drag is mostly an UPPER-ARM YAW at CONSTANT
-# elevation (RIGHT -19), with the elbow fold OPENING as the hand crosses to the avatar's
-# left and TIGHTENING as it reaches to the right -- so HEIGHT stays ~flat (y 1.34 -> 1.39)
-# the whole way, the horizontal line the sign needs. UP yaw 115 -> 40 (fold -66 -> -82)
-# walks the hand x +0.20 -> -0.32 (~0.51 m, the widest cross-body reach the right arm can
-# make at chest height while STAYING FORWARD OF THE CHEST -- reaching further to the
-# avatar's left drives the hand behind the chest plane, z<0.1, and it clips the torso).
-# The forward reach (z) naturally arcs 0.16 (left) -> 0.39 (right); on the near-frontal
-# shipped camera that depth arc barely shows, so it still reads as a horizontal drag.
-# WRIST -- SOLVED PER KEYFRAME: keeping the palm flat-forward while the upper arm yaws needs
-# a DIFFERENT wrist at every key (a single fixed world-wrist would rotate the palm away from
-# forward as the arm swings, since the palm-forward orientation is NOT invariant under the
-# yaw). Each key's raw [x,y,z] axis-angle maps that pose's natural hand basis to
-# (fingers->up, palm normal->+z at the viewer), computed from the measured natural basis at
-# each pose (PoseLab). SignDirector slerps between them; consecutive solves share a near-
-# identical axis so the palm stays ~forward the whole drag. Emotion NEUTRAL (naming carries
-# none) -- no _WORD_DEFAULT_EMOTION entry.
-def _name_key(up, fold, wax, wang):
-    return {
-        "RightUpperArm": [{"axis": "RIGHT", "angle": -19}, {"axis": "UP", "angle": up}],
-        "RightLowerArm": [{"axis": "RIGHT", "angle": fold}, {"axis": "UP", "angle": 10}],
-        "RightWrist": {"axis": wax, "angle": wang},
-        "curl_right": NAME_HAND,
-    }
-# (up_yaw, fold, wrist_axis, wrist_angle) per key, avatar-LEFT -> avatar-RIGHT.
-_NAME_L = (115, -66, [-0.5958, -0.8006,  0.0632], 165.63)  # left end (avatar's left)
-_NAME_2 = (100, -68, [-0.5979, -0.8012, -0.0232], 154.20)
-_NAME_C = ( 85, -71, [-0.5866, -0.8019, -0.1135], 142.88)  # centre
-_NAME_4 = ( 66, -74, [-0.5673, -0.7919, -0.2263], 128.21)
-_NAME_R = ( 40, -82, [-0.4856, -0.7833, -0.3882], 108.28)  # right end (avatar's right)
-NAME_SIGN = [
-    {"t": 0.0, **NEUTRAL_POSE},
-    {"t": 0.16, **NEUTRAL_POSE, **_name_key(*_NAME_L)},  # QUICK: swing across to the avatar's LEFT, hand formed
-    {"t": 0.24, **NEUTRAL_POSE, **_name_key(*_NAME_L)},  # brief beat at the left end
-    {"t": 0.40, **NEUTRAL_POSE, **_name_key(*_NAME_2)},  # SLOW drag left -> right ...
-    {"t": 0.54, **NEUTRAL_POSE, **_name_key(*_NAME_C)},
-    {"t": 0.68, **NEUTRAL_POSE, **_name_key(*_NAME_4)},
-    {"t": 0.82, **NEUTRAL_POSE, **_name_key(*_NAME_R)},  # ... to the avatar's RIGHT end
-    {"t": 0.88, **NEUTRAL_POSE, **_name_key(*_NAME_R)},  # brief beat at the right end
-    {"t": 1.0, **NEUTRAL_POSE},                          # back down to rest
-]
-
 WORD_SIGNS = {
-    # NAME: palm-forward hand, index bent forward + thumb base-bent forward, drawn
-    # horizontally across the body left->right (see NAME_SIGN).
-    "name": NAME_SIGN,
-    # KNOW: a four-finger hand tapping the temple, twice -- "it's in my head" (see KNOW_SIGN).
-    "know": KNOW_SIGN,
     # TODAY: index-point bobbed down at the chest (see TODAY_SIGN).
     "today": TODAY_SIGN,
     # YESTERDAY: index-up at the cheek, then hooked closed into a fist (see YESTERDAY_SIGN).
@@ -1142,85 +925,23 @@ WORD_SIGNS = {
             "RightLowerArm": [{"axis": "RIGHT", "angle": -70}, {"axis": "UP", "angle": 40}],
             "RightWrist": {"axis": "UP", "angle": 0},
             "curl_right": FLAT},
-        # 3. THRUST OUT -> stop pointing FORWARD (2026-07-22, per user): instead of
-        # flinging the arm up-and-out to the SIDE, the outward move stops when the
-        # forearm/hand points FORWARD -- the direction the avatar faces, perpendicular
-        # to the body -- with the upper arm (bicep) raised/extended outward. The hand
-        # ends out in front at ~shoulder height (~(-0.30, 1.50, 0.43)), palm turned
-        # FORWARD (same way the avatar faces). The wrist's flip (fingers-down at the
-        # DIP -> palm-forward) completes over this leg and holds. (Earlier versions
-        # ended out to the side: fully lateral ~(-0.66,1.63,0.11), then a toned-down
-        # out-and-slightly-forward ~(-0.58,1.61,0.24) -- both replaced.)
+        # 3. THRUST OUT: arm sweeps up-and-out on a diagonal; palm flips to face
+        # FORWARD, fingers up-and-out (hand above the shoulder). The reach is
+        # deliberately TONED DOWN from an earlier fully-lateral extension
+        # (hand ~(-0.66, 1.63, 0.11), arm straight out to the side): the elbow now
+        # stays more bent and the hand ends out-AND-slightly-forward from the body
+        # (~(-0.58, 1.61, 0.24)) so it reads as "extending outward" rather than
+        # thrown flat out to the side (2026-07-21).
         {"t": 0.66, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "RIGHT", "angle": -58}, {"axis": "UP", "angle": 30}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -45}, {"axis": "UP", "angle": 18}],
+            "RightUpperArm": [{"axis": "RIGHT", "angle": -80}, {"axis": "UP", "angle": -8}],
+            "RightLowerArm": [{"axis": "RIGHT", "angle": -40}, {"axis": "UP", "angle": 14}],
             "RightWrist": {"axis": "UP", "angle": -70},
             "curl_right": FLAT},
-        {"t": 0.82, **NEUTRAL_POSE,          # hold the forward-pointing end so it reads
-            "RightUpperArm": [{"axis": "RIGHT", "angle": -58}, {"axis": "UP", "angle": 30}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -45}, {"axis": "UP", "angle": 18}],
+        {"t": 0.82, **NEUTRAL_POSE,          # hold the extended end so the thrust reads
+            "RightUpperArm": [{"axis": "RIGHT", "angle": -80}, {"axis": "UP", "angle": -8}],
+            "RightLowerArm": [{"axis": "RIGHT", "angle": -40}, {"axis": "UP", "angle": 14}],
             "RightWrist": {"axis": "UP", "angle": -70},
             "curl_right": FLAT},
-        {"t": 1.0, **NEUTRAL_POSE},
-    ],
-    # WHY (Sign 2): the open, upturned questioning hand (ISL_dictionary/Why_(Sign_2).mp4).
-    # An open SPREAD "5" hand (FIVE) is raised to in front of the chest, palm turned UP
-    # and toward the signer with the fingers pointing UP-and-out and clearly splayed, and
-    # given a small side-to-side questioning SHAKE, then lowered. It reads together with a
-    # questioning FACE (the LLM tags the emotion; a question word normally lands "question").
-    #
-    # Two things had to come together (see the decode notes in CLAUDE.md):
-    #  * THE HANDSHAPE HAD TO SPREAD. Every existing shape holds the fingers together or
-    #    curls them; FIVE fans them apart with a NEGATIVE "_converge" (the CONE machinery
-    #    run backwards -- see the FIVE comment). Light curl (~0.1) keeps it an open hand.
-    #  * PALM-UP *AND* FINGERS-UP AT A LOW, CENTRED HAND is the "low+centred doesn't exist"
-    #    trap (see DRINK): a vertical forearm (fingers naturally up) throws the hand out to
-    #    the shoulder, while a low centred hand leaves the forearm pointing FORWARD (fingers
-    #    forward, not up). The fix is a low forward-forearm pose (RightUpperArm FORWARD -26/
-    #    UP 18, RightLowerArm RIGHT -98/UP 32 -> hand ~(-0.33, 1.25, 0.27), MID-CHEST, elbow
-    #    tucked low by the side, slightly to the signer's right -- matching the reference,
-    #    which holds the hand low and in front, NOT up at the shoulder) PLUS a wrist that
-    #    both rolls the palm UP (FORWARD -90) and FLEXES the fingertips up (RIGHT -15): the
-    #    fingertips ride ~6 cm above the wrist (Probe/PoseLab-solved, verified palm-up +
-    #    fingers-up from the shipped camera). The SHAKE is a small UP-yaw oscillation of the
-    #    upper arm (~+-4 deg) paired with a tiny wrist-roll wobble, so the whole open hand
-    #    jiggles side-to-side in place while held -- the questioning tremble, not a travel path.
-    "why": [
-        {"t": 0.0, **NEUTRAL_POSE},
-        # Rise to the open palm-up questioning hand, low and in front of the chest.
-        {"t": 0.28, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 18}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -15}],
-            "curl_right": FIVE},
-        # Questioning shake: a WIDE side-to-side swing (upper-arm UP +-10, wrist roll
-        # +-7) so the open hand rocks clearly left-and-right -- a bigger, more emphatic
-        # "why?!" than the earlier subtle +-4 tremble.
-        {"t": 0.40, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 28}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -22}],
-            "curl_right": FIVE},
-        {"t": 0.52, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 8}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -8}],
-            "curl_right": FIVE},
-        {"t": 0.64, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 28}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -22}],
-            "curl_right": FIVE},
-        {"t": 0.76, **NEUTRAL_POSE,
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 9}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -9}],
-            "curl_right": FIVE},
-        {"t": 0.86, **NEUTRAL_POSE,          # settle back to the base hold before lowering
-            "RightUpperArm": [{"axis": "FORWARD", "angle": -26}, {"axis": "UP", "angle": 18}],
-            "RightLowerArm": [{"axis": "RIGHT", "angle": -98}, {"axis": "UP", "angle": 32}],
-            "RightWrist": [{"axis": "FORWARD", "angle": -90}, {"axis": "RIGHT", "angle": -15}],
-            "curl_right": FIVE},
         {"t": 1.0, **NEUTRAL_POSE},
     ],
     # Non-lexical function words (never played by the fixed gloss; kept so the

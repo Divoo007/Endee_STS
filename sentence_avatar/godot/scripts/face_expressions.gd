@@ -32,10 +32,15 @@ const FACE_SHAPE_ALIASES := {
 	"sneerL": "NoseSneerLeft", "sneerR": "NoseSneerRight", "noseWrinkle": "NoseWrinkler",
 	"frownL": "MouthFrownLeft", "frownR": "MouthFrownRight",
 	"jawOpen": "JawOpen", "lidUpL": "L_UpperLidRaiser", "lidUpR": "R_UpperLidRaiser",
-	# Pressed-lips set (doubtful/"I don't know"): the lips clamp shut. AK mouth-press
-	# + AU lip pressor/tightener + mouth-close, stacked for a firm, held read.
-	"pressL": "MouthPressLeft", "pressR": "MouthPressRight",
-	"lipPress": "LipPressor", "lipTight": "LipTightener", "mouthClose": "MouthClose",
+	# Sad-specific set: lowered lids + downcast gaze, downturned corners (AU +
+	# purpose-built "Sad" mouth shapes), lips slightly parted.
+	"lidDroop": "LidDroop", "eyesDown": "EyesDown",
+	"lipCornerDown": "LipCornerDepressor", "lipsPart": "LipsPart",
+	"sadMouthL": "Mouth_Sad_Left", "sadMouthR": "Mouth_Sad_Right",
+	# Surprise-specific: EyeWide pushes the upper AND lower lid apart (sclera
+	# visible above and below the iris), JawDrop is a relaxed hinge-open (paired
+	# with jawOpen + lipsPart for a natural, not-clenched open mouth).
+	"eyeWideL": "EyeWideLeft", "eyeWideR": "EyeWideRight", "jawDrop": "JawDrop",
 }
 
 # Held facial weights per emotion (0.0-1.0 per named alias). Lists both VRM and
@@ -58,22 +63,49 @@ const FACE_PRESETS := {
 		"browUpL": 1.0, "outBrowL": 1.0,                       # ONE eyebrow strongly raised (AK+AU)
 		"innerBrow": 0.5, "browInner": 0.4, "lidUpL": 0.4,     # quizzical, wider that eye
 	},
-	"sad": {"sorrow": 1.0, "frownL": 0.7, "frownR": 0.7},
-	"surprised": {"oh": 0.85, "jawOpen": 0.4, "browUpL": 0.8, "browUpR": 0.8, "innerBrow": 0.6, "blink": 0.0},
-	# Sarcasm reads through ASYMMETRY: a one-sided smirk (left corner only) under
-	# the OPPOSITE brow cocked up, with half-lidded, unimpressed eyes and a faint
-	# sneer. Deliberately lopsided -- a symmetric smile would read as genuine.
-	"sarcasm": {
-		"joy": 0.4,                                            # VRM: faint amusement
-		"smileL": 0.9, "pullL": 1.0,                           # smirk: left corner only
-		"browUpR": 0.85, "outBrowR": 0.75,                     # opposite (right) brow cocked
-		"eyeSqL": 0.4, "eyeSqR": 0.4, "lidTight": 0.4,         # half-lidded, unimpressed
-		"sneerL": 0.4, "cheekRaiseL": 0.5,                     # faint one-sided sneer/cheek
+	# Sad / remorseful: the old version was just "sorrow" (VRM-only) + a mild mouth
+	# frown -- on the realistic ARKit-driven avatar that left brows/eyes untouched,
+	# so it read as barely different from neutral. Rebuilt around the FACS "grief"
+	# combo (AU1+4: inner brow raiser WITH brow lowerer at once) plus lowered lids,
+	# a downcast gaze, and purpose-built sad-mouth shapes:
+	"sad": {
+		"sorrow": 1.0,                                          # VRM (only lever on that avatar)
+		"browInner": 0.65, "innerBrow": 0.65,                   # inner corners pulled UP (AK+AU)...
+		"browDownL": 0.35, "browDownR": 0.35, "browLow": 0.35,  # ...and TOGETHER: a slight furrow.
+		                                                         # Raise+lower together (not one or the
+		                                                         # other) is what makes the classic
+		                                                         # oblique "sad brow", distinct from
+		                                                         # pleading's raise-only (no furrow) and
+		                                                         # angry's furrow-only (no raise).
+		"lidDroop": 0.45, "eyesDown": 0.35,                     # eyelids lowered, gaze drops (AU)
+		"frownL": 0.7, "frownR": 0.7,                           # mouth corners curve down (AK)
+		"lipCornerDown": 0.5, "sadMouthL": 0.55, "sadMouthR": 0.55,  # ...stacked with the AU
+		                                                              # depressor + purpose-built
+		                                                              # "Sad" mouth shapes
+		"lipsPart": 0.25,                                       # lips slightly parted (AU)
+	},
+	# Genuine surprise: BOTH eyebrows raised high and curved (AK outer + AU outer
+	# + inner, no asymmetry, no furrow -- that combo is what separates surprise
+	# from pleading's inner-only oblique and sad's raise+furrow), eyes opened WIDE
+	# so the sclera shows above AND below the iris (EyeWide, stacked with the
+	# upper-lid-raiser AU for extra lift), and a RELAXED jaw drop -- JawOpen +
+	# JawDrop + a lips-part, kept moderate so the mouth reads as slightly open,
+	# not a big cartoon "oh" (VRM's only lever is the "oh" viseme, so it stays,
+	# but toned down from a full round mouth).
+	"surprised": {
+		"oh": 0.6,                                              # VRM (only lever, gentler than before)
+		"browUpL": 0.9, "browUpR": 0.9,                         # BOTH outer brows raised high (AK)...
+		"outBrowL": 0.8, "outBrowR": 0.8,                       # ...stacked with the AU outer raiser
+		"browInner": 0.6, "innerBrow": 0.7,                     # ...and inner corners too (AK+AU)
+		"eyeWideL": 0.85, "eyeWideR": 0.85,                     # eyes wide: sclera above + below (AK)
+		"lidUpL": 0.35, "lidUpR": 0.35,                         # extra upper-lid lift (AU)
+		"jawOpen": 0.3, "jawDrop": 0.3, "lipsPart": 0.3,        # relaxed jaw drop, slightly open
+		"blink": 0.0,                                           # VRM: make sure eyes read open
 	},
 	# Pleading / begging: the inner brows pulled UP hard (the tell-tale "puppy"
 	# arch), a gentle downturned mouth (asking, not smiling) and eyes opened a
-	# touch for a soft, imploring look. Symmetric -- unlike sarcasm -- because a
-	# sincere plea reads as earnest, not lopsided.
+	# touch for a soft, imploring look. Symmetric and earnest, unlike a lopsided
+	# smirk would read.
 	"pleading": {
 		"sorrow": 0.55,                                        # VRM: soft plaintive base
 		"browInner": 1.0, "innerBrow": 1.0,                    # inner brows raised hard (AK+AU) --
@@ -82,18 +114,6 @@ const FACE_PRESETS := {
 		                                                       # reads as pleading, not surprise.
 		"frownL": 0.6, "frownR": 0.6,                          # gentle downturned, begging mouth
 		"lidUpL": 0.2, "lidUpR": 0.2,                          # eyes opened a touch -- soft, imploring
-	},
-	# Doubtful / "I don't know": brows SLIGHTLY lowered, lips PRESSED tightly shut,
-	# and a VERY slight frown -- an unsure, non-committal face. Paired (in
-	# SignDirector._emotion_head_delta) with a small side-to-side head TURN. Kept
-	# gentler than "angry" (brows ~0.5 not 1.0, no sneer/eye-narrowing) so it reads
-	# as uncertainty, not displeasure. The pressed lips are the strongest cue.
-	"doubtful": {
-		"sorrow": 0.22,                                        # VRM: faint plaintive base
-		"browDownL": 0.5, "browDownR": 0.5, "browLow": 0.4,    # brows slightly lowered (AK+AU)
-		"pressL": 0.9, "pressR": 0.9, "lipPress": 0.75,        # lips pressed tight (AK+AU)
-		"mouthClose": 0.45, "lipTight": 0.55,                  #   ...firmly shut
-		"frownL": 0.3, "frownR": 0.3,                          # very slight frown
 	},
 	"relaxed": {},
 }

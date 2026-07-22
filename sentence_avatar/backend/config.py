@@ -40,9 +40,7 @@ ALLOWED_EMOTIONS: List[str] = [
     "sad",
     "question",
     "surprised",
-    "sarcasm",
     "pleading",
-    "doubtful",
 ]
 
 

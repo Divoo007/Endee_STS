@@ -269,6 +269,15 @@ func _finger_curls(kf: Dictionary, side: String) -> Dictionary:
 	# so it flows through interpolation/apply like the thumb axis does.
 	if typeof(raw) == TYPE_DICTIONARY and raw.has("_converge"):
 		result["_converge"] = float(raw["_converge"])
+	# Optional base-only bend: fold ~90deg at the base knuckle only, staying straight.
+	# Value is a bool (all four fingers, KNOW) OR an Array of finger names (only those,
+	# NAME's index-out-of-a-fist). Carried through interpolation/apply like the above.
+	if typeof(raw) == TYPE_DICTIONARY and raw.has("_base_bend"):
+		result["_base_bend"] = raw["_base_bend"]
+	# Optional PIP bend: same as base-bend but the fold is at the PIP (Intermediate) joint
+	# instead of the base knuckle (NAME's index). Carried through like _base_bend.
+	if typeof(raw) == TYPE_DICTIONARY and raw.has("_pip_bend"):
+		result["_pip_bend"] = raw["_pip_bend"]
 	return result
 
 
@@ -285,7 +294,33 @@ func _lerp_finger_curls(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
 	# Convergence IS lerp-able (a scalar) -- interpolate it so the cone forms
 	# gradually as the hand rises and relaxes as it lowers back to the open bookend.
 	result["_converge"] = lerpf(float(a.get("_converge", 0.0)), float(b.get("_converge", 0.0)), t)
+	# Base-only bend is a discrete mode (how the curl maps to joints), not lerp-able:
+	# keep it ACTIVE across the whole transition if EITHER endpoint uses it, so the
+	# fingers stay straight-and-base-bending as the curl scalar ramps in/out (no mid-rise
+	# pop from claw to flat). The value carries through as-is (bool for KNOW, or the Array
+	# of finger names for NAME) -- prefer whichever endpoint actually has it set.
+	var bb_a = a.get("_base_bend", false)
+	var bb_b = b.get("_base_bend", false)
+	var bb = bb_b if _bend_active(bb_b) else bb_a
+	if _bend_active(bb):
+		result["_base_bend"] = bb
+	# PIP bend carries through the same way.
+	var pb_a = a.get("_pip_bend", false)
+	var pb_b = b.get("_pip_bend", false)
+	var pb = pb_b if _bend_active(pb_b) else pb_a
+	if _bend_active(pb):
+		result["_pip_bend"] = pb
 	return result
+
+
+## True when a _base_bend value actually enables base-bending: bool true, or a
+## non-empty Array of finger names.
+func _bend_active(v) -> bool:
+	if typeof(v) == TYPE_BOOL:
+		return v
+	if typeof(v) == TYPE_ARRAY:
+		return not (v as Array).is_empty()
+	return false
 
 
 ## Samples a word's keyframe list at fraction (0-1) of that word's duration,
@@ -432,13 +467,21 @@ func _apply_sample(sample: Dictionary) -> void:
 	# the rig's global thumb axis for hands that don't specify one.
 	var thumb_axes := {}
 	var converge := {}
+	var base_bend := {}
+	var pip_bend := {}
 	for side in ["Left", "Right"]:
 		var c = sample["curl_left" if side == "Left" else "curl_right"]
 		if typeof(c) == TYPE_DICTIONARY and c.has("_thumb_axis"):
-			thumb_axes[side] = AXES.get(String(c["_thumb_axis"]), _hand_rig.get_thumb_curl_axis())
+			# Named axis ("BACK", ...) OR a raw [x,y,z] vector (NAME's thumb, base-bent
+			# out along a solved direction) -- _resolve_axis handles both.
+			thumb_axes[side] = _resolve_axis(c["_thumb_axis"], _hand_rig.get_thumb_curl_axis())
 		if typeof(c) == TYPE_DICTIONARY and c.has("_converge"):
 			converge[side] = float(c["_converge"])
-	_hand_rig.apply_fingers({"Left": sample["curl_left"], "Right": sample["curl_right"]}, 0.0, wrist_deltas, thumb_axes, converge)
+		if typeof(c) == TYPE_DICTIONARY and c.has("_base_bend"):
+			base_bend[side] = c["_base_bend"]  # bool (all four) OR Array of finger names
+		if typeof(c) == TYPE_DICTIONARY and c.has("_pip_bend"):
+			pip_bend[side] = c["_pip_bend"]    # Array of finger names (fold at the PIP)
+	_hand_rig.apply_fingers({"Left": sample["curl_left"], "Right": sample["curl_right"]}, 0.0, wrist_deltas, thumb_axes, converge, base_bend, pip_bend)
 
 
 # Emotion-driven HEAD motion, scaled by the current word's intensity (0..1) so a
@@ -459,18 +502,10 @@ func _emotion_head_delta() -> Basis:
 			return Basis(Vector3.RIGHT, deg_to_rad(9.0 * i))       # head droops down
 		"surprised":
 			return Basis(Vector3.RIGHT, deg_to_rad(-7.0 * i))      # head lifts back
-		"sarcasm":
-			# lazy sideways head cock with a slow sway -- the "oh, sure" tilt
-			return Basis(Vector3.FORWARD, deg_to_rad((6.0 + 3.0 * sin(_idle_t * 1.4)) * (0.4 + 0.6 * i)))
 		"pleading":
 			# head tips gently forward/down -- the imploring "please" bow, deeper
 			# with intensity, with a faint slow beg-nod
 			return Basis(Vector3.RIGHT, deg_to_rad((5.0 + 5.0 * i) + 2.0 * sin(_idle_t * 1.8)))
-		"doubtful":
-			# slight side-to-side head TURN (yaw about UP) -- a subtle, slow
-			# "I don't know" shake that runs throughout the sign; amplitude grows
-			# a little with intensity but stays gentle.
-			return Basis(Vector3.UP, deg_to_rad(sin(_idle_t * 2.4) * 8.0 * (0.45 + 0.55 * i)))
 		_:
 			return Basis.IDENTITY
 
@@ -495,8 +530,6 @@ func _speed_factor(emotion: String, intensity: float) -> float:
 			return 1.05 - 0.2 * i
 		"sad":
 			return 1.1 + 0.5 * i         # 1.1 .. 1.6   (slow, heavy)
-		"sarcasm":
-			return 1.15 + 0.35 * i       # 1.15 .. 1.5  (drawn-out, exaggerated)
 		"pleading":
 			return 1.1 + 0.3 * i         # 1.1 .. 1.4   (slow, imploring)
 		_:

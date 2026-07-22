@@ -69,9 +69,13 @@ func _apply():
 		deltas[side + "LowerArm"] = upper * lower_raw * upper.inverse()
 	_arm.apply(deltas, 0.0)
 	var conv: float = float(_cfg.get("converge", 0.0))
+	# Base-only bend (KNOW): read "_base_bend" from each curl dict (as the sign data
+	# carries it), so the four fingers fold ~90deg at the base knuckle only.
+	var bb := {"Left": _base_bend(_cfg.get("curl_left", {})), "Right": _base_bend(_cfg.get("curl_right", {}))}
+	var pb := {"Left": _pip_bend(_cfg.get("curl_left", {})), "Right": _pip_bend(_cfg.get("curl_right", {}))}
 	_hand.apply_fingers({"Left": _curl(_cfg.get("curl_left", {})), "Right": _curl(_cfg.get("curl_right", {}))},
 		0.0, {"Left": _wrist(_cfg.get("wrist_left", {})), "Right": _wrist(_cfg.get("wrist_right", {}))},
-		{}, {"Left": conv, "Right": conv})
+		{}, {"Left": conv, "Right": conv}, bb, pb)
 	FaceExpressions.apply(_mesh, _idx, _cfg.get("emotion", "relaxed"))
 
 # Axis from a named string ("RIGHT"/"-UP"/...), a raw [x,y,z] array, or "" (fallback).
@@ -105,6 +109,17 @@ func _curl(raw):
 	var r := {}
 	for f in HandRig.FINGER_NAMES: r[f] = float(raw.get(f, 0.0)) if typeof(raw) == TYPE_DICTIONARY else float(raw)
 	return r
+func _base_bend(raw):
+	# bool (all four fingers) OR Array of finger names (only those base-bend). Passed
+	# straight to hand_rig, which interprets both (see HandRig._base_bends).
+	if typeof(raw) == TYPE_DICTIONARY:
+		return raw.get("_base_bend", false)
+	return false
+func _pip_bend(raw):
+	# Array of finger names to fold at the PIP (Intermediate) instead of the base knuckle.
+	if typeof(raw) == TYPE_DICTIONARY:
+		return raw.get("_pip_bend", false)
+	return false
 func _frame():
 	var cam: Camera3D = $Camera3D
 	if _cfg.get("real_camera", false):

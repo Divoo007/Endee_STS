@@ -21,6 +21,17 @@ const FINGER_CURL_MAX_DEG := {
 const FINGER_CURL_AXIS := Vector3.RIGHT  # local to each finger bone's own rest frame
 const HAND_WIGGLE_AXIS := Vector3.RIGHT  # local to each hand bone's own rest frame
 
+# --- Finger BASE-ONLY bend ("bent-B"), for flat-fingers-at-90deg handshapes (KNOW) --
+# A normal curl bends all three finger joints (Proximal+Intermediate+Distal), so the
+# finger rolls into a CLAW. Some signs want the four fingers to stay STRAIGHT but fold
+# ~90deg at the base knuckle only (the fingers make a right angle with the palm and
+# point straight off it -- KNOW's fingertips into the temple). "_base_bend" (opt-in per
+# handshape, threaded like "_converge") makes the four fingers bend ONLY at the Proximal
+# joint, using this larger max so the curl value can reach a full right angle; the
+# Intermediate/Distal joints stay straight. Thumb is unaffected. Gated behind the flag,
+# so every existing handshape is untouched.
+const BASE_BEND_MAX_DEG := 95.0
+
 # --- Finger CONVERGENCE (adduction), for cone/"flower-bud" handshapes (PLEASE) --
 # The curl model only flexes fingers toward the palm; it can't draw the fingertips
 # TOGETHER laterally, so a pursed cone never forms. "converge" (0..1) adds a base-
@@ -126,7 +137,7 @@ func apply(curl_left: float, curl_right: float, wiggle_deg: float = 0.0) -> void
 ## for that hand (fists fold the thumb about BACK to carry it across the PALM;
 ## the default _thumb_curl_axis -- UP on the Biped -- suits pinch shapes). Fingers
 ## other than the thumb are unaffected.
-func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0, wrist_deltas: Dictionary = {}, thumb_axes: Dictionary = {}, converge: Dictionary = {}) -> void:
+func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0, wrist_deltas: Dictionary = {}, thumb_axes: Dictionary = {}, converge: Dictionary = {}, base_bend: Dictionary = {}, pip_bend: Dictionary = {}) -> void:
 	for bone_name in _relative_order:
 		var idx := _skeleton.find_bone(_name_map.get(bone_name, bone_name))
 		if idx == -1:
@@ -152,12 +163,33 @@ func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0, wrist_delt
 			var is_thumb: bool = finger == "Thumb"
 			var side_curls: Dictionary = finger_curls.get(side, {})
 			var curl: float = side_curls.get(finger, 0.0)
+			# BASE-ONLY bend (opt-in): fold ~90deg at the BASE joint only, keeping the digit
+			# straight (the other joints = 0). The per-side value is EITHER a bool (all four
+			# fingers, e.g. KNOW) OR an Array of digit names so only those base-bend while the
+			# rest curl normally (NAME: the index -- and the thumb -- stick straight out of a
+			# fist). See _base_bends. For the four fingers the base joint is Proximal; for the
+			# THUMB it's Metacarpal, and it bends about the FINGER curl axis (NOT the thumb
+			# axis) -- the same swing that points the base-bent index out along the palm normal.
+			# PIP bend ("_pip_bend") is the SAME single-joint fold but at the PIP (the
+			# Intermediate bone) instead of the base knuckle -- the proximal segment stays in
+			# line with the hand and only the top of the finger folds. Same value form + max
+			# angle as base_bend; four-finger only (thumb has no PIP). Used by NAME's index.
+			var wants_base_bend: bool = _base_bends(base_bend.get(side, false), finger)
+			var wants_pip_bend: bool = (not is_thumb) and _base_bends(pip_bend.get(side, false), finger)
 			var angle_deg: float = curl * FINGER_CURL_MAX_DEG.get(role, 60.0)
-			if is_thumb:
-				angle_deg *= _thumb_curl_scale
 			var axis: Vector3
-			if is_thumb:
+			if is_thumb and wants_base_bend:
+				angle_deg = (curl * BASE_BEND_MAX_DEG) if role == "Metacarpal" else 0.0
 				axis = thumb_axes.get(side, _thumb_curl_axis)
+			elif is_thumb:
+				angle_deg *= _thumb_curl_scale
+				axis = thumb_axes.get(side, _thumb_curl_axis)
+			elif wants_pip_bend:
+				angle_deg = (curl * BASE_BEND_MAX_DEG) if role == "Intermediate" else 0.0
+				axis = _finger_curl_axis
+			elif wants_base_bend:
+				angle_deg = (curl * BASE_BEND_MAX_DEG) if role == "Proximal" else 0.0
+				axis = _finger_curl_axis
 			else:
 				axis = _finger_curl_axis
 			var delta_local := Basis(axis, deg_to_rad(angle_deg))
@@ -182,3 +214,16 @@ func apply_fingers(finger_curls: Dictionary, wiggle_deg: float = 0.0, wrist_delt
 		var final_global_origin: Vector3 = parent_global * local_rest.origin
 		_skeleton.set_bone_global_pose_override(idx, Transform3D(final_global_basis, final_global_origin), 1.0, true)
 		_skeleton.force_update_all_bone_transforms()
+
+
+## Whether a given finger should base-bend, given a per-side base_bend value that is
+## either a bool (true = all four fingers base-bend, e.g. KNOW) or an Array of finger
+## names (only those base-bend; the rest curl normally, e.g. NAME's index).
+func _base_bends(v, finger: String) -> bool:
+	if typeof(v) == TYPE_BOOL:
+		# bool = the FOUR FINGERS only (KNOW's historical meaning); the thumb base-bends
+		# ONLY when named explicitly in the list form, so bool never touches it.
+		return v and finger != "Thumb"
+	if typeof(v) == TYPE_ARRAY:
+		return finger in v
+	return false

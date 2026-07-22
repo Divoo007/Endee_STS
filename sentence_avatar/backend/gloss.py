@@ -80,19 +80,16 @@ Step 2 -- Otherwise judge the STATEMENT's overall tone:
   - Criticism / insult / bad news (statement) -> "angry"    ("you are a bad teacher.")
   - Loss / disappointment / apology           -> "sad"
   - Shock / amazement                         -> "surprised"
-  - Not-knowing / "there is nothing" / a shrug-> "doubtful"
   - A request or appeal, or bare "please"     -> "pleading"  (soft ask -> low
     intensity, begging -> high). Overridden only by clear context, e.g.
     "yes, please" is glad acceptance -> "happy".
-  - Positive words said flat / drawn-out / sing-song (needs prosody) -> "sarcasm".
   - Genuinely flat, affectless content        -> "neutral"  (last resort; prefer a
     real emotion at intensity 0.5-0.9 whenever the sentence supports one).
 
 PROSODY (when provided): high pitch + loud + fast + wide range -> raise the
 intensity (anger/excitement/surprise); low + quiet + slow + flat -> calmer/sadder,
-lower intensity; upbeat words with flat or exaggerated delivery -> lean "sarcasm".
-Prosody adjusts the INTENSITY and can tip a borderline choice, but it never breaks
-the one-emotion-per-sentence rule.
+lower intensity. Prosody adjusts the INTENSITY and can tip a borderline choice, but
+it never breaks the one-emotion-per-sentence rule.
 
 EXAMPLES (every word shares the one emotion):
   "are you a bad teacher?"  -> gloss: YOU TEACHER BAD   | all "question"
@@ -353,19 +350,17 @@ def _enforce_uniform_emotion(
 
 # Each word's DEFAULT facial expression, applied ONLY when that word was left
 # "neutral" -- so the LLM can always override it per word. This is the safety net
-# behind the prompt: NONE/NOTHING/EMPTY -> "doubtful" ("I don't know"), BAD ->
-# "angry" (displeasure), GOOD -> "happy" (approval), PLEASE -> "pleading" (an
-# appeal). "please" is context-dependent, so the prompt is told to override this
-# in clear cases (e.g. "yes, please" -> happy) by emitting that emotion explicitly;
-# the default here only catches the standalone/ambiguous "please" the LLM leaves
-# neutral, giving it the pleading face. Keeps word<->expression in the gloss layer.
+# behind the prompt: BAD -> "angry" (displeasure), GOOD -> "happy" (approval),
+# PLEASE -> "pleading" (an appeal). "please" is context-dependent, so the prompt
+# is told to override this in clear cases (e.g. "yes, please" -> happy) by
+# emitting that emotion explicitly; the default here only catches the
+# standalone/ambiguous "please" the LLM leaves neutral, giving it the pleading
+# face. Keeps word<->expression in the gloss layer.
 _WORD_DEFAULT_EMOTION: Dict[str, Tuple[str, float]] = {
-    "none": ("doubtful", 0.75),
-    "nothing": ("doubtful", 0.75),
-    "empty": ("doubtful", 0.75),
     "bad": ("angry", 0.7),
     "good": ("happy", 0.7),
     "please": ("pleading", 0.7),
+    "sorry": ("sad", 0.7),
 }
 
 
